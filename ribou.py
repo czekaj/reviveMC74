@@ -28,6 +28,8 @@ bd              -- An instance of bod
 # comment
 import sys, code, inspect
 
+unicode = str  # For Python 3 compatibility
+
 # List of all known special names (from grepping CPython source)
 _pyidNames = ['__IOBase_closed', '__abstractmethods__', '__adapt__',
   '__aenter__', '__aexit__', '__aiter__', '__all__', '__anext__',

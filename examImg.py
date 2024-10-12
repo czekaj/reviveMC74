@@ -321,16 +321,26 @@ def executeAdb(cmd, showErr=True, returnStr=True, log=False):
 
 
 def executeLog(cmd, showErr=True, ignore=None):
-  '''Execute an operating system command and log the command and response'''
-  print("    Executing: '"+str(cmd)+"'")
-  ret = execute(cmd, showErr)
-  resp = "    '"+str(cmd)+"'  (rc="+str(ret[1])+")\n"+prefix('      |', ret[0])
-  if ignore and ret[0].find(ignore)!=-1:  # Does the response contain the string to ignore
-    log(resp)  # This error response is okay, don't print to console
-    # Usually done with a command which is okay to fail, like erasing a file that is not there.
-  else :
-    logp(resp)
-  return ret
+    '''Execute an operating system command and log the command and response'''
+    print("    Executing: '" + str(cmd) + "'")
+    ret = execute(cmd, showErr)
+    
+    # Ensure ret[0] is a string
+    if isinstance(ret[0], bytes):
+        ret = (ret[0].decode('utf-8', errors='replace'), ret[1])
+    
+    resp = "    '" + str(cmd) + "'  (rc=" + str(ret[1]) + ")\n" + prefix('      |', ret[0])
+    
+    # Ensure ignore is a string for comparison
+    if ignore is not None and isinstance(ignore, bytes):
+        ignore = ignore.decode('utf-8', errors='replace')
+    
+    if ignore and ignore in ret[0]:  # Does the response contain the string to ignore
+        log(resp)  # This error response is okay, don't print to console
+        # Usually done with a command which is okay to fail, like erasing a file that is not there.
+    else:
+        logp(resp)
+    return ret
 
 
 def log(msg, prefix=""):
@@ -348,9 +358,17 @@ def logp(msg, prefix=""):
 
 
 def prefix(prefix, msg):
-  if len(msg)==0:  return msg
-  msg = msg[:-1] if msg[-1]=='\n' else msg
-  return prefix+('\n'+prefix).join(msg.split('\n'))
+    if isinstance(msg, bytes):
+        prefix = prefix.encode() if isinstance(prefix, str) else prefix
+        if len(msg) == 0:
+            return msg
+        msg = msg[:-1] if msg.endswith(b'\n') else msg
+        return prefix + b'\n'.join([prefix + line for line in msg.split(b'\n')])
+    else:
+        if len(msg) == 0:
+            return msg
+        msg = msg[:-1] if msg.endswith('\n') else msg
+        return prefix + '\n'.join([prefix + line for line in msg.split('\n')])
 
 
 def listDir(dir, recursive=True, search=''):

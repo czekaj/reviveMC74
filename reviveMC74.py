@@ -30,8 +30,8 @@ neededProgs = bunch(  # These are commands that demonstrate that needed programs
   fastboot = ["fastboot", "adbNeeded"],
   unpackbootimg = ["unpackbootimg", "unpNeeded"],
   mkbootimg = ["mkbootimg", "unpNeeded"],
-  chmod = ["chmod", "unpNeeded"], 
-  cpio = ["cpio", "unpNeeded"], 
+  chmod = ["chmod --version", "unpNeeded"],
+  cpio = ["cpio --version", "unpNeeded"],
   gzip = ["gzip -V", "gzipNeeded"], 
   gunzip = ["gunzip -V", "gzipNeeded"], 
 )
@@ -219,15 +219,28 @@ def reviveMain(args):
 
 # VARIOUS UTILITY FUNCTIONS --------------------------------------------------
 def chkProg(pg):
-  try:
-    resp, rc = execute(pg[0], False)
-  except:
     progName = pg[0].split(' ')[0]
-    #print("Can't find '"+progName+"' program in path")
-    state.error.append("checkProgs: Can't find '"+progName+"' program")
+    
+    # First, try using 'which'
+    which_path = shutil.which(progName)
+    if which_path:
+        print(f"Found {progName} at: {which_path}")
+        return True
+    
+    # If 'which' fails, try the original command
+    try:
+        resp, rc = execute(pg[0], False)
+        print(f"Executed '{pg[0]}', return code: {rc}")
+        if rc == 0:
+            print(f"Successfully executed {progName}")
+            return True
+    except Exception as e:
+        print(f"Error executing {progName}: {str(e)}")
+    
+    print(f"Failed to find or execute {progName}")
+    state.error.append(f"checkProgs: Can't find '{progName}' program")
     state.needed.append(pg[1])
     return False
-  return True
 
 
 def chkFile(fid):
@@ -654,7 +667,7 @@ def installAppsFunc():
   # 'ip addr | grep \ eth0:' look like:
   # 3: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 512
   #     link/ether e0:55:3d:50:56:10 brd ff:ff:ff:ff:ff:ff
-  resp, rc = executeAdb("shell ip addr |grep -A1 \ eth0: | grep ether")
+  resp, rc = executeAdb("shell ip addr |grep -A1 eth0: | grep ether")
   state.mac = resp.strip().split(' ')[1]
   print("  (mac "+state.mac+")");
   
